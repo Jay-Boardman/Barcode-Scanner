@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barcode Scanner App</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#317EFB">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input, button, textarea { padding: 8px; margin: 5px 0; font-size: 16px; }
+    .list { margin-top: 15px; }
+    .item { padding: 5px; border-bottom: 1px solid #ddd; }
+    button { cursor: pointer; margin-right: 5px; }
+  </style>
+</head>
+<body>
+  <h2>Barcode Scanner App</h2>
+
+  <label>Scanned Code:</label><br>
+  <input id="codeInput" type="text" autofocus><br>
+
+  <label>Quantity:</label><br>
+  <input id="qtyInput" type="number" value="1" min="1"><br>
+
+  <button id="addBtn" type="button">Add Item</button>
+  <button id="exportBtn" type="button">Export Data</button>
+  <button id="downloadBtn" type="button">Download File</button>
+  <button id="clearBtn" type="button">Clear All</button>
+
+  <div class="list" id="list"></div>
+
+  <h3>Output String</h3>
+  <textarea id="output" rows="6" style="width:100%;"></textarea>
+
+  <script>
+    let items = [];
+    const codeInput = document.getElementById('codeInput');
+    const qtyInput = document.getElementById('qtyInput');
+    const listDiv = document.getElementById('list');
+    const output = document.getElementById('output');
+
+    function addItem() {
+      const code = codeInput.value.trim();
+      const qty = parseInt(qtyInput.value, 10);
+
+      if (!code) {
+        alert("Please scan or enter a barcode.");
+        return;
+      }
+
+      if (qty <= 0) {
+        alert("Quantity must be at least 1.");
+        return;
+      }
+
+      items.push({ code, qty });
+      renderList();
+
+      codeInput.value = "";
+      qtyInput.value = 1;
+      codeInput.focus();
+    }
+
+    function renderList() {
+      listDiv.innerHTML = "";
+      items.forEach((item) => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.textContent = `${item.code} - ${item.qty}`;
+        listDiv.appendChild(div);
+      });
+    }
+
+    function exportData() {
+      const result = items.map(i => `${i.code} ${i.qty}`).join("\n");
+      output.value = result;
+    }
+
+    function downloadData() {
+      exportData(); // keep textarea updated
+      const text = output.value;
+      const blob = new Blob([text], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "scanned-items.txt";
+
+      if (typeof a.download === "undefined") {
+        // iOS Safari fallback
+        window.open(url, "_blank");
+      } else {
+        a.click();
+      }
+
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function clearAll() {
+      items = [];
+      listDiv.innerHTML = "";
+      output.value = "";
+      codeInput.value = "";
+      qtyInput.value = 1;
+      codeInput.focus();
+    }
+
+    // Event listeners
+    document.getElementById("addBtn").addEventListener("click", addItem);
+    document.getElementById("exportBtn").addEventListener("click", exportData);
+    document.getElementById("downloadBtn").addEventListener("click", downloadData);
+    document.getElementById("clearBtn").addEventListener("click", clearAll);
+
+    qtyInput.addEventListener("keypress", e => {
+      if (e.key === "Enter") {
+        addItem();
+      }
+    });
+
+    // Register service worker
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("service-worker.js")
+          .catch(err => console.error("SW registration failed:", err));
+      });
+    }
+  </script>
+</body>
+</html>
