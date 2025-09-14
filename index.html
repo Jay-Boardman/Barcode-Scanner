@@ -5,33 +5,108 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pathology Supplies Scanner</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#317EFB">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    input, button, textarea { padding: 8px; margin: 5px 0; font-size: 16px; }
-    .list { margin-top: 15px; }
-    .item { padding: 5px; border-bottom: 1px solid #ddd; }
-    button { cursor: pointer; margin-right: 5px; }
+    /* General Styles */
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #f3f3f3;
+      color: #333;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h2 {
+      color: #005eb8;
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: 700;
+    }
+
+    label {
+      font-weight: 500;
+      display: block;
+      margin-top: 10px;
+    }
+
+    input, textarea {
+      width: 100%;
+      font-size: 16px;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 48%;
+      background-color: #005eb8;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      margin: 5px 1%;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: #004a90;
+    }
+
+    .list {
+      margin-top: 20px;
+    }
+
+    .item {
+      background: white;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      font-weight: 500;
+    }
+
+    .badge {
+      background-color: #28a745;
+      color: white;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 14px;
+      min-width: 30px;
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      button { width: 100%; margin: 5px 0; }
+    }
   </style>
 </head>
 <body>
   <h2>Pathology Supplies Scanner</h2>
 
-  <label>Scanned Code:</label><br>
-  <input id="codeInput" type="text" autofocus><br>
+  <label for="codeInput">Scanned Code:</label>
+  <input id="codeInput" type="text" autofocus placeholder="Scan or enter barcode">
 
-  <label>Quantity:</label><br>
-  <input id="qtyInput" type="number" value="1" min="1"><br>
+  <label for="qtyInput">Quantity:</label>
+  <input id="qtyInput" type="number" value="1" min="1">
 
-  <button id="addBtn" type="button">Add Item</button>
-  <button id="exportBtn" type="button">Export Data</button>
-  <button id="downloadBtn" type="button">Download File</button>
-  <button id="clearBtn" type="button">Clear All</button>
+  <div>
+    <button id="addBtn" type="button">Add Item</button>
+    <button id="exportBtn" type="button">Export Data</button>
+    <button id="downloadBtn" type="button">Download File</button>
+    <button id="clearBtn" type="button">Clear All</button>
+  </div>
 
   <div class="list" id="list"></div>
 
   <h3>Output String</h3>
-  <textarea id="output" rows="6" style="width:100%;"></textarea>
+  <textarea id="output" rows="6" style="width:100%; border-radius:8px; padding:10px;"></textarea>
 
   <script>
     let items = [];
@@ -48,7 +123,6 @@
         alert("Please scan or enter a barcode.");
         return;
       }
-
       if (qty <= 0) {
         alert("Quantity must be at least 1.");
         return;
@@ -67,7 +141,7 @@
       items.forEach((item) => {
         const div = document.createElement("div");
         div.className = "item";
-        div.textContent = `${item.code} - ${item.qty}`;
+        div.innerHTML = `<span>${item.code}</span> <span class="badge">${item.qty}</span>`;
         listDiv.appendChild(div);
       });
     }
@@ -78,7 +152,7 @@
     }
 
     function downloadData() {
-      exportData(); // keep textarea updated
+      exportData();
       const text = output.value;
       const blob = new Blob([text], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
@@ -88,7 +162,6 @@
       a.download = "scanned-items.txt";
 
       if (typeof a.download === "undefined") {
-        // iOS Safari fallback
         window.open(url, "_blank");
       } else {
         a.click();
@@ -106,19 +179,15 @@
       codeInput.focus();
     }
 
-    // Event listeners
     document.getElementById("addBtn").addEventListener("click", addItem);
     document.getElementById("exportBtn").addEventListener("click", exportData);
     document.getElementById("downloadBtn").addEventListener("click", downloadData);
     document.getElementById("clearBtn").addEventListener("click", clearAll);
 
     qtyInput.addEventListener("keypress", e => {
-      if (e.key === "Enter") {
-        addItem();
-      }
+      if (e.key === "Enter") addItem();
     });
 
-    // Register service worker
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("service-worker.js")
@@ -128,5 +197,3 @@
   </script>
 </body>
 </html>
-
-
