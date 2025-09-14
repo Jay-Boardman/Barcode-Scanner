@@ -1,5 +1,5 @@
 {
-  "name": "Barcode Scanner App",
+  "name": "Pathology Supplies Scanner",
   "short_name": "Scanner",
   "start_url": "index.html",
   "display": "standalone",
@@ -18,3 +18,4 @@
     }
   ]
 }
+
