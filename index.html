@@ -40,21 +40,19 @@
       color: white;
       border: none;
       border-radius: 8px;
-      padding: 10px;
+      padding: 10px 12px;
       margin: 5px 1%;
       cursor: pointer;
       font-size: 16px;
       transition: background 0.2s;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
+      gap: 6px;
     }
     button:hover {
       background-color: #004a90;
     }
     button i {
-      vertical-align: middle;
-      margin-right: 5px;
       stroke-width: 2;
       width: 20px;
       height: 20px;
@@ -132,7 +130,6 @@
         return;
       }
 
-      // Merge duplicates: check if item already exists
       const existing = items.find(i => i.code === code);
       if (existing) {
         existing.qty += qty;
@@ -142,7 +139,6 @@
 
       renderList();
 
-      // Reset for next scan
       codeInput.value = "";
       qtyInput.value = 1;
       codeInput.focus();
@@ -157,13 +153,17 @@
           <span>${item.code}</span>
           <span class="badge">${item.qty}</span>
           <div class="item-controls">
-            <button onclick="editItem(${index})" title="Edit"><i data-lucide="pencil"></i></button>
-            <button onclick="deleteItem(${index})" title="Delete"><i data-lucide="trash-2"></i></button>
+            <button onclick="editItem(${index})" title="Edit">
+              <i data-lucide="pencil"></i> Edit
+            </button>
+            <button onclick="deleteItem(${index})" title="Delete">
+              <i data-lucide="trash-2"></i> Delete
+            </button>
           </div>
         `;
         listDiv.appendChild(div);
       });
-      lucide.createIcons(); // re-render icons
+      lucide.createIcons();
     }
 
     function editItem(index) {
@@ -219,18 +219,16 @@
       codeInput.focus();
     }
 
-    // Event listeners
     document.getElementById("addBtn").addEventListener("click", addItem);
     document.getElementById("exportBtn").addEventListener("click", exportData);
     document.getElementById("downloadBtn").addEventListener("click", downloadData);
     document.getElementById("clearBtn").addEventListener("click", clearAll);
 
-    // Workflow: barcode → qty → add
     codeInput.addEventListener("keypress", e => {
       if (e.key === "Enter") {
         e.preventDefault();
         qtyInput.focus();
-        qtyInput.select(); // highlight the "1"
+        qtyInput.select();
       }
     });
 
@@ -241,10 +239,8 @@
       }
     });
 
-    // Initialize Lucide icons
     lucide.createIcons();
 
-    // Service worker registration
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("service-worker.js")
