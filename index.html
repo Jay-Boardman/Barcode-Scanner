@@ -6,7 +6,6 @@
   <title>Pathology Supplies Scanner</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide/dist/lucide.min.js"></script>
   <style>
     body {
       font-family: 'Roboto', sans-serif;
@@ -45,17 +44,9 @@
       cursor: pointer;
       font-size: 16px;
       transition: background 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
     }
     button:hover {
       background-color: #004a90;
-    }
-    button i {
-      stroke-width: 2;
-      width: 20px;
-      height: 20px;
     }
     .list {
       margin-top: 20px;
@@ -99,10 +90,10 @@
   <input id="qtyInput" type="number" value="1" min="1">
 
   <div class="top-buttons">
-    <button id="addBtn" type="button"><i data-lucide="plus-circle"></i> Add Item</button>
-    <button id="exportBtn" type="button"><i data-lucide="file-text"></i> Export Data</button>
-    <button id="downloadBtn" type="button"><i data-lucide="download"></i> Download File</button>
-    <button id="clearBtn" type="button"><i data-lucide="trash-2"></i> Clear All</button>
+    <button id="addBtn" type="button">Add Item</button>
+    <button id="exportBtn" type="button">Export Data</button>
+    <button id="downloadBtn" type="button">Download File</button>
+    <button id="clearBtn" type="button">Clear All</button>
   </div>
 
   <div class="list" id="list"></div>
@@ -153,17 +144,12 @@
           <span>${item.code}</span>
           <span class="badge">${item.qty}</span>
           <div class="item-controls">
-            <button onclick="editItem(${index})" title="Edit">
-              <i data-lucide="pencil"></i> Edit
-            </button>
-            <button onclick="deleteItem(${index})" title="Delete">
-              <i data-lucide="trash-2"></i> Delete
-            </button>
+            <button onclick="editItem(${index})">Edit</button>
+            <button onclick="deleteItem(${index})">Delete</button>
           </div>
         `;
         listDiv.appendChild(div);
       });
-      lucide.createIcons();
     }
 
     function editItem(index) {
@@ -238,8 +224,6 @@
         addItem();
       }
     });
-
-    lucide.createIcons();
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
