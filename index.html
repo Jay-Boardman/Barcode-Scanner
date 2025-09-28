@@ -42,6 +42,10 @@
     input {
       flex: 1;
     }
+    #qtyInput {
+      width: 70px; /* smaller quantity box */
+      flex: none;
+    }
     button {
       background-color: #005eb8;
       color: white;
@@ -98,7 +102,7 @@
       <button onclick="addItem()">Add</button>
     </div>
     <div class="input-group">
-      <button id="voiceBtn">🎤 Start Voice Scan</button>
+      <button id="voiceBtn">Start Voice Scan</button>
     </div>
     <div id="status"></div>
     <div id="list"></div>
@@ -114,6 +118,7 @@
     const qtyInput = document.getElementById("qtyInput");
     const listDiv = document.getElementById("list");
     const statusDiv = document.getElementById("status");
+    const voiceBtn = document.getElementById("voiceBtn");
     let items = [];
 
     // Add item (merge duplicates)
@@ -211,6 +216,7 @@
     let recognition;
     let waitingForQty = false;
     let tempCode = "";
+    let voiceActive = false;
 
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -228,7 +234,7 @@
           statusDiv.textContent = "Code heard: " + tempCode + ". Listening for quantity...";
           waitingForQty = true;
 
-          setTimeout(() => recognition.start(), 1000);
+          setTimeout(() => recognition.start(), 500);
         } else {
           const qty = parseInt(transcript, 10);
           if (!isNaN(qty) && tempCode) {
@@ -239,12 +245,17 @@
               items.push({ code: tempCode, qty });
             }
             renderList();
-            statusDiv.textContent = "Added: " + tempCode + " x " + qty;
+            statusDiv.textContent = "Added: " + tempCode + " x " + qty + ". Listening for next barcode...";
           } else {
             statusDiv.textContent = "Couldn't understand quantity, try again.";
           }
           waitingForQty = false;
           tempCode = "";
+
+          // restart for next barcode if still active
+          if (voiceActive) {
+            setTimeout(() => recognition.start(), 1000);
+          }
         }
       };
 
@@ -253,19 +264,30 @@
         statusDiv.textContent = "Speech recognition error: " + event.error;
         waitingForQty = false;
         tempCode = "";
+
+        if (voiceActive) {
+          setTimeout(() => recognition.start(), 1500);
+        }
       };
 
-      document.getElementById("voiceBtn").addEventListener("click", () => {
-        if (recognition) {
+      voiceBtn.addEventListener("click", () => {
+        if (!voiceActive) {
+          voiceActive = true;
           waitingForQty = false;
           tempCode = "";
           statusDiv.textContent = "Listening for barcode...";
+          voiceBtn.textContent = "End Voice Scan";
           recognition.start();
+        } else {
+          voiceActive = false;
+          recognition.stop();
+          statusDiv.textContent = "Voice scan stopped.";
+          voiceBtn.textContent = "Start Voice Scan";
         }
       });
     } else {
-      document.getElementById("voiceBtn").disabled = true;
-      document.getElementById("voiceBtn").innerText = "Voice not supported";
+      voiceBtn.disabled = true;
+      voiceBtn.innerText = "Voice not supported";
     }
   </script>
 </body>
