@@ -75,6 +75,12 @@
       background: #e0e0e0;
       color: #000;
     }
+    #status {
+      margin: 1rem 0;
+      font-weight: bold;
+      color: #005eb8;
+      min-height: 1.5rem;
+    }
     footer {
       text-align: center;
       margin-top: 2rem;
@@ -94,6 +100,7 @@
     <div class="input-group">
       <button id="voiceBtn">🎤 Start Voice Scan</button>
     </div>
+    <div id="status"></div>
     <div id="list"></div>
     <div class="input-group">
       <button onclick="downloadData()">Download</button>
@@ -106,6 +113,7 @@
     const codeInput = document.getElementById("codeInput");
     const qtyInput = document.getElementById("qtyInput");
     const listDiv = document.getElementById("list");
+    const statusDiv = document.getElementById("status");
     let items = [];
 
     // Add item (merge duplicates)
@@ -113,14 +121,8 @@
       const code = codeInput.value.trim();
       const qty = parseInt(qtyInput.value, 10);
 
-      if (!code) {
-        alert("Please scan or enter a barcode.");
-        return;
-      }
-      if (qty <= 0) {
-        alert("Quantity must be at least 1.");
-        return;
-      }
+      if (!code) return;
+      if (qty <= 0) return;
 
       const existing = items.find(i => i.code === code);
       if (existing) {
@@ -223,9 +225,10 @@
 
         if (!waitingForQty) {
           tempCode = transcript.replace(/\s/g, "");
-          alert("You said code: " + tempCode + ". Now say the quantity.");
+          statusDiv.textContent = "Code heard: " + tempCode + ". Listening for quantity...";
           waitingForQty = true;
-          recognition.start();
+
+          setTimeout(() => recognition.start(), 1000);
         } else {
           const qty = parseInt(transcript, 10);
           if (!isNaN(qty) && tempCode) {
@@ -236,9 +239,9 @@
               items.push({ code: tempCode, qty });
             }
             renderList();
-            alert("Added: " + tempCode + " x " + qty);
+            statusDiv.textContent = "Added: " + tempCode + " x " + qty;
           } else {
-            alert("Couldn't understand the quantity, try again.");
+            statusDiv.textContent = "Couldn't understand quantity, try again.";
           }
           waitingForQty = false;
           tempCode = "";
@@ -247,7 +250,7 @@
 
       recognition.onerror = (event) => {
         console.error("Speech error:", event.error);
-        alert("Speech recognition error: " + event.error);
+        statusDiv.textContent = "Speech recognition error: " + event.error;
         waitingForQty = false;
         tempCode = "";
       };
@@ -256,6 +259,7 @@
         if (recognition) {
           waitingForQty = false;
           tempCode = "";
+          statusDiv.textContent = "Listening for barcode...";
           recognition.start();
         }
       });
