@@ -13,7 +13,7 @@
       padding: 0;
     }
     header {
-      background-color: #005eb8; /* NHS Blue */
+      background-color: #005eb8;
       color: white;
       padding: 1rem;
       text-align: center;
@@ -43,7 +43,7 @@
       flex: 1;
     }
     #qtyInput {
-      width: 70px; /* smaller quantity box */
+      width: 70px;
       flex: none;
     }
     button {
@@ -121,13 +121,54 @@
     const voiceBtn = document.getElementById("voiceBtn");
     let items = [];
 
-    // Add item (merge duplicates)
+    // 🔊 Beep sound function
+    function playBeep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = 800; // beep pitch
+        gain.gain.value = 0.1; // volume
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2); // 200ms beep
+      } catch (e) {
+        console.warn("Beep not supported:", e);
+      }
+    }
+
+    // Convert words → numbers
+    function wordsToNumber(str) {
+      str = str.toLowerCase();
+      const smallNumbers = {
+        "zero":0,"one":1,"two":2,"three":3,"four":4,"five":5,
+        "six":6,"seven":7,"eight":8,"nine":9,"ten":10,
+        "eleven":11,"twelve":12,"thirteen":13,"fourteen":14,"fifteen":15,
+        "sixteen":16,"seventeen":17,"eighteen":18,"nineteen":19
+      };
+      const tens = {
+        "twenty":20,"thirty":30,"forty":40,"fifty":50,
+        "sixty":60,"seventy":70,"eighty":80,"ninety":90
+      };
+
+      if (!isNaN(parseInt(str, 10))) return parseInt(str, 10);
+
+      let parts = str.split(/[\s-]+/);
+      let total = 0;
+      parts.forEach(p => {
+        if (smallNumbers[p] !== undefined) total += smallNumbers[p];
+        else if (tens[p] !== undefined) total += tens[p];
+      });
+      return total || NaN;
+    }
+
+    // Add item
     function addItem() {
       const code = codeInput.value.trim();
       const qty = parseInt(qtyInput.value, 10);
-
-      if (!code) return;
-      if (qty <= 0) return;
+      if (!code || qty <= 0) return;
 
       const existing = items.find(i => i.code === code);
       if (existing) {
@@ -135,8 +176,8 @@
       } else {
         items.push({ code, qty });
       }
-
       renderList();
+      playBeep(); // 🔊 beep when added
       codeInput.value = "";
       qtyInput.value = 1;
       codeInput.focus();
@@ -185,7 +226,6 @@
       }
     }
 
-    // Export data
     function downloadData() {
       const text = items.map(i => `${i.code} ${i.qty}`).join("\n");
       const blob = new Blob([text], { type: "text/plain" });
@@ -195,7 +235,6 @@
       a.click();
     }
 
-    // Barcode input enter → focus qty
     codeInput.addEventListener("keypress", e => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -203,8 +242,6 @@
         qtyInput.select();
       }
     });
-
-    // Qty input enter → add item
     qtyInput.addEventListener("keypress", e => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -227,24 +264,20 @@
 
       recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript.trim();
-        console.log("Heard:", transcript);
 
         if (!waitingForQty) {
           tempCode = transcript.replace(/\s/g, "");
           statusDiv.textContent = "Code heard: " + tempCode + ". Listening for quantity...";
           waitingForQty = true;
-
           setTimeout(() => recognition.start(), 500);
         } else {
-          const qty = parseInt(transcript, 10);
-          if (!isNaN(qty) && tempCode) {
+          const qty = wordsToNumber(transcript);
+          if (!isNaN(qty) && qty > 0 && tempCode) {
             const existing = items.find(i => i.code === tempCode);
-            if (existing) {
-              existing.qty += qty;
-            } else {
-              items.push({ code: tempCode, qty });
-            }
+            if (existing) existing.qty += qty;
+            else items.push({ code: tempCode, qty });
             renderList();
+            playBeep(); // 🔊 beep for voice too
             statusDiv.textContent = "Added: " + tempCode + " x " + qty + ". Listening for next barcode...";
           } else {
             statusDiv.textContent = "Couldn't understand quantity, try again.";
@@ -252,22 +285,15 @@
           waitingForQty = false;
           tempCode = "";
 
-          // restart for next barcode if still active
-          if (voiceActive) {
-            setTimeout(() => recognition.start(), 1000);
-          }
+          if (voiceActive) setTimeout(() => recognition.start(), 1000);
         }
       };
 
       recognition.onerror = (event) => {
-        console.error("Speech error:", event.error);
         statusDiv.textContent = "Speech recognition error: " + event.error;
         waitingForQty = false;
         tempCode = "";
-
-        if (voiceActive) {
-          setTimeout(() => recognition.start(), 1500);
-        }
+        if (voiceActive) setTimeout(() => recognition.start(), 1500);
       };
 
       voiceBtn.addEventListener("click", () => {
