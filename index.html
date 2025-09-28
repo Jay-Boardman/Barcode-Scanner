@@ -128,18 +128,17 @@
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "sine";
-        osc.frequency.value = 800; // beep pitch
-        gain.gain.value = 0.1; // volume
+        osc.frequency.value = 800;
+        gain.gain.value = 0.1;
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.2); // 200ms beep
+        osc.stop(ctx.currentTime + 0.2);
       } catch (e) {
         console.warn("Beep not supported:", e);
       }
     }
 
-    // Convert words → numbers
     function wordsToNumber(str) {
       str = str.toLowerCase();
       const smallNumbers = {
@@ -152,9 +151,7 @@
         "twenty":20,"thirty":30,"forty":40,"fifty":50,
         "sixty":60,"seventy":70,"eighty":80,"ninety":90
       };
-
       if (!isNaN(parseInt(str, 10))) return parseInt(str, 10);
-
       let parts = str.split(/[\s-]+/);
       let total = 0;
       parts.forEach(p => {
@@ -164,26 +161,20 @@
       return total || NaN;
     }
 
-    // Add item
     function addItem() {
       const code = codeInput.value.trim();
       const qty = parseInt(qtyInput.value, 10);
       if (!code || qty <= 0) return;
-
       const existing = items.find(i => i.code === code);
-      if (existing) {
-        existing.qty += qty;
-      } else {
-        items.push({ code, qty });
-      }
+      if (existing) existing.qty += qty;
+      else items.push({ code, qty });
       renderList();
-      playBeep(); // 🔊 beep when added
+      playBeep();
       codeInput.value = "";
       qtyInput.value = 1;
       codeInput.focus();
     }
 
-    // Render list
     function renderList() {
       listDiv.innerHTML = "";
       items.forEach((item, index) => {
@@ -226,13 +217,25 @@
       }
     }
 
+    // ✅ Updated downloadData to use Share Sheet if available
     function downloadData() {
       const text = items.map(i => `${i.code} ${i.qty}`).join("\n");
       const blob = new Blob([text], { type: "text/plain" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "scanned_data.txt";
-      a.click();
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], "scanned_data.txt", { type: "text/plain" })] })) {
+        const file = new File([blob], "scanned_data.txt", { type: "text/plain" });
+        navigator.share({
+          files: [file],
+          title: "Scanned Data",
+          text: "Here is the exported barcode scan data."
+        }).catch(err => console.error("Share failed:", err));
+      } else {
+        // fallback to normal download
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "scanned_data.txt";
+        a.click();
+      }
     }
 
     codeInput.addEventListener("keypress", e => {
@@ -277,7 +280,7 @@
             if (existing) existing.qty += qty;
             else items.push({ code: tempCode, qty });
             renderList();
-            playBeep(); // 🔊 beep for voice too
+            playBeep();
             statusDiv.textContent = "Added: " + tempCode + " x " + qty + ". Listening for next barcode...";
           } else {
             statusDiv.textContent = "Couldn't understand quantity, try again.";
