@@ -43,7 +43,7 @@
       flex: 1;
     }
     #qtyInput {
-      width: 70px;
+      width: 60px;
       flex: none;
     }
     button {
@@ -139,6 +139,7 @@
       }
     }
 
+    // Convert words → numbers
     function wordsToNumber(str) {
       str = str.toLowerCase();
       const smallNumbers = {
@@ -151,7 +152,9 @@
         "twenty":20,"thirty":30,"forty":40,"fifty":50,
         "sixty":60,"seventy":70,"eighty":80,"ninety":90
       };
+
       if (!isNaN(parseInt(str, 10))) return parseInt(str, 10);
+
       let parts = str.split(/[\s-]+/);
       let total = 0;
       parts.forEach(p => {
@@ -161,10 +164,12 @@
       return total || NaN;
     }
 
+    // Add item
     function addItem() {
       const code = codeInput.value.trim();
       const qty = parseInt(qtyInput.value, 10);
       if (!code || qty <= 0) return;
+
       const existing = items.find(i => i.code === code);
       if (existing) existing.qty += qty;
       else items.push({ code, qty });
@@ -217,23 +222,35 @@
       }
     }
 
-    // ✅ Updated downloadData to use Share Sheet if available
+    // ✅ Download / Share Sheet with date
     function downloadData() {
+      if (!items.length) {
+        alert("No items to download.");
+        return;
+      }
+
       const text = items.map(i => `${i.code} ${i.qty}`).join("\n");
       const blob = new Blob([text], { type: "text/plain" });
 
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], "scanned_data.txt", { type: "text/plain" })] })) {
-        const file = new File([blob], "scanned_data.txt", { type: "text/plain" });
+      const date = new Date();
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      const fileName = `scanned_data_${yyyy}-${mm}-${dd}.txt`;
+
+      // Share Sheet
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], fileName, { type: "text/plain" })] })) {
+        const file = new File([blob], fileName, { type: "text/plain" });
         navigator.share({
           files: [file],
           title: "Scanned Data",
           text: "Here is the exported barcode scan data."
         }).catch(err => console.error("Share failed:", err));
       } else {
-        // fallback to normal download
+        // fallback download
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
-        a.download = "scanned_data.txt";
+        a.download = fileName;
         a.click();
       }
     }
