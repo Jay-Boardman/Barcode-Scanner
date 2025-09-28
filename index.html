@@ -4,110 +4,111 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pathology Supplies Scanner</title>
-  <link rel="manifest" href="manifest.json">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="apple-touch-icon" href="nhs-icon.png">
   <style>
     body {
-      font-family: 'Roboto', sans-serif;
-      background-color: #f3f3f3;
-      color: #333;
-      padding: 20px;
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f9;
       margin: 0;
+      padding: 0;
     }
-    h2 {
-      color: #005eb8;
+    header {
+      background-color: #005eb8; /* NHS Blue */
+      color: white;
+      padding: 1rem;
       text-align: center;
-      margin-bottom: 20px;
-      font-weight: 700;
+      font-size: 1.5rem;
+      font-weight: bold;
     }
-    label {
-      font-weight: 500;
-      display: block;
-      margin-top: 10px;
+    main {
+      max-width: 600px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
-    input, textarea {
-      width: 100%;
-      font-size: 16px;
-      padding: 10px;
-      margin: 5px 0;
+    .input-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    input, button {
+      padding: 0.75rem;
+      font-size: 1rem;
       border-radius: 8px;
       border: 1px solid #ccc;
-      box-sizing: border-box;
+    }
+    input {
+      flex: 1;
     }
     button {
       background-color: #005eb8;
       color: white;
       border: none;
-      border-radius: 8px;
-      padding: 10px 12px;
-      margin: 5px 1%;
       cursor: pointer;
-      font-size: 16px;
       transition: background 0.2s;
     }
     button:hover {
-      background-color: #004a90;
+      background-color: #004a94;
     }
-    .list {
-      margin-top: 20px;
+    #list {
+      margin-top: 1rem;
     }
     .item {
-      background: white;
-      padding: 10px;
-      margin: 5px 0;
-      border-radius: 8px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      font-weight: 500;
-    }
-    .item-controls {
-      display: flex;
-      gap: 8px;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #eee;
     }
     .badge {
-      background-color: #28a745;
+      background: #005eb8;
       color: white;
-      padding: 3px 8px;
+      padding: 0.2rem 0.6rem;
       border-radius: 12px;
-      font-size: 14px;
-      min-width: 30px;
-      text-align: center;
+      font-size: 0.9rem;
+      margin-left: 0.5rem;
     }
-    @media (max-width: 600px) {
-      .top-buttons button { width: 100%; margin: 5px 0; }
+    .item-controls button {
+      margin-left: 0.5rem;
+      background: #e0e0e0;
+      color: #000;
+    }
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.9rem;
+      color: #555;
     }
   </style>
 </head>
 <body>
-  <h2>Pathology Supplies Scanner</h2>
-
-  <label for="codeInput">Scanned Code:</label>
-  <input id="codeInput" type="text" autofocus placeholder="Scan or enter barcode">
-
-  <label for="qtyInput">Quantity:</label>
-  <input id="qtyInput" type="number" value="1" min="1">
-
-  <div class="top-buttons">
-    <button id="addBtn" type="button">Add Item</button>
-    <button id="exportBtn" type="button">Export Data</button>
-    <button id="downloadBtn" type="button">Download File</button>
-    <button id="clearBtn" type="button">Clear All</button>
-  </div>
-
-  <div class="list" id="list"></div>
-
-  <h3>Output String</h3>
-  <textarea id="output" rows="6" style="width:100%; border-radius:8px; padding:10px;"></textarea>
+  <header>Pathology Supplies Scanner</header>
+  <main>
+    <div class="input-group">
+      <input type="text" id="codeInput" placeholder="Scan or enter barcode">
+      <input type="number" id="qtyInput" value="1" min="1">
+      <button onclick="addItem()">Add</button>
+    </div>
+    <div class="input-group">
+      <button id="voiceBtn">🎤 Start Voice Scan</button>
+    </div>
+    <div id="list"></div>
+    <div class="input-group">
+      <button onclick="downloadData()">Download</button>
+      <button onclick="clearAll()">Clear All</button>
+    </div>
+  </main>
+  <footer>© NHS Pathology Supplies</footer>
 
   <script>
+    const codeInput = document.getElementById("codeInput");
+    const qtyInput = document.getElementById("qtyInput");
+    const listDiv = document.getElementById("list");
     let items = [];
-    const codeInput = document.getElementById('codeInput');
-    const qtyInput = document.getElementById('qtyInput');
-    const listDiv = document.getElementById('list');
-    const output = document.getElementById('output');
 
+    // Add item (merge duplicates)
     function addItem() {
       const code = codeInput.value.trim();
       const qty = parseInt(qtyInput.value, 10);
@@ -129,12 +130,12 @@
       }
 
       renderList();
-
       codeInput.value = "";
       qtyInput.value = 1;
       codeInput.focus();
     }
 
+    // Render list
     function renderList() {
       listDiv.innerHTML = "";
       items.forEach((item, index) => {
@@ -153,63 +154,41 @@
     }
 
     function editItem(index) {
-      const newQty = prompt("Enter new quantity for " + items[index].code, items[index].qty);
+      const newQty = prompt("Enter new quantity:", items[index].qty);
       if (newQty !== null) {
         const qty = parseInt(newQty, 10);
         if (!isNaN(qty) && qty > 0) {
           items[index].qty = qty;
           renderList();
-        } else {
-          alert("Invalid quantity.");
         }
       }
     }
 
     function deleteItem(index) {
-      if (confirm("Remove " + items[index].code + " from the list?")) {
+      if (confirm("Remove this item?")) {
         items.splice(index, 1);
         renderList();
       }
     }
 
-    function exportData() {
-      const result = items.map(i => `${i.code} ${i.qty}`).join("\n");
-      output.value = result;
-    }
-
-    function downloadData() {
-      exportData();
-      const text = output.value;
-      const blob = new Blob([text], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "scanned-items.txt";
-
-      if (typeof a.download === "undefined") {
-        window.open(url, "_blank");
-      } else {
-        a.click();
-      }
-
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
-
     function clearAll() {
-      items = [];
-      listDiv.innerHTML = "";
-      output.value = "";
-      codeInput.value = "";
-      qtyInput.value = 1;
-      codeInput.focus();
+      if (confirm("Clear all items?")) {
+        items = [];
+        renderList();
+      }
     }
 
-    document.getElementById("addBtn").addEventListener("click", addItem);
-    document.getElementById("exportBtn").addEventListener("click", exportData);
-    document.getElementById("downloadBtn").addEventListener("click", downloadData);
-    document.getElementById("clearBtn").addEventListener("click", clearAll);
+    // Export data
+    function downloadData() {
+      const text = items.map(i => `${i.code} ${i.qty}`).join("\n");
+      const blob = new Blob([text], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "scanned_data.txt";
+      a.click();
+    }
 
+    // Barcode input enter → focus qty
     codeInput.addEventListener("keypress", e => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -218,6 +197,7 @@
       }
     });
 
+    // Qty input enter → add item
     qtyInput.addEventListener("keypress", e => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -225,11 +205,63 @@
       }
     });
 
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("service-worker.js")
-          .catch(err => console.error("SW registration failed:", err));
+    // Voice recognition
+    let recognition;
+    let waitingForQty = false;
+    let tempCode = "";
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.lang = "en-GB";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript.trim();
+        console.log("Heard:", transcript);
+
+        if (!waitingForQty) {
+          tempCode = transcript.replace(/\s/g, "");
+          alert("You said code: " + tempCode + ". Now say the quantity.");
+          waitingForQty = true;
+          recognition.start();
+        } else {
+          const qty = parseInt(transcript, 10);
+          if (!isNaN(qty) && tempCode) {
+            const existing = items.find(i => i.code === tempCode);
+            if (existing) {
+              existing.qty += qty;
+            } else {
+              items.push({ code: tempCode, qty });
+            }
+            renderList();
+            alert("Added: " + tempCode + " x " + qty);
+          } else {
+            alert("Couldn't understand the quantity, try again.");
+          }
+          waitingForQty = false;
+          tempCode = "";
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Speech error:", event.error);
+        alert("Speech recognition error: " + event.error);
+        waitingForQty = false;
+        tempCode = "";
+      };
+
+      document.getElementById("voiceBtn").addEventListener("click", () => {
+        if (recognition) {
+          waitingForQty = false;
+          tempCode = "";
+          recognition.start();
+        }
       });
+    } else {
+      document.getElementById("voiceBtn").disabled = true;
+      document.getElementById("voiceBtn").innerText = "Voice not supported";
     }
   </script>
 </body>
