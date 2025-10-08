@@ -79,12 +79,6 @@
       background: #e0e0e0;
       color: #000;
     }
-    #status {
-      margin: 1rem 0;
-      font-weight: bold;
-      color: #005eb8;
-      min-height: 1.5rem;
-    }
     footer {
       text-align: center;
       margin-top: 2rem;
@@ -101,11 +95,9 @@
       <input type="number" id="qtyInput" value="1" min="1">
       <button onclick="addItem()">Add</button>
     </div>
-    <div class="input-group">
-      <button id="voiceBtn">Start Voice Scan</button>
-    </div>
-    <div id="status"></div>
+
     <div id="list"></div>
+
     <div class="input-group">
       <button onclick="downloadData()">Download</button>
       <button onclick="clearAll()">Clear All</button>
@@ -117,11 +109,9 @@
     const codeInput = document.getElementById("codeInput");
     const qtyInput = document.getElementById("qtyInput");
     const listDiv = document.getElementById("list");
-    const statusDiv = document.getElementById("status");
-    const voiceBtn = document.getElementById("voiceBtn");
     let items = [];
 
-    // 🔊 Beep sound function
+    // 🔊 Beep sound
     function playBeep() {
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -139,32 +129,7 @@
       }
     }
 
-    // Convert words → numbers
-    function wordsToNumber(str) {
-      str = str.toLowerCase();
-      const smallNumbers = {
-        "zero":0,"one":1,"two":2,"three":3,"four":4,"five":5,
-        "six":6,"seven":7,"eight":8,"nine":9,"ten":10,
-        "eleven":11,"twelve":12,"thirteen":13,"fourteen":14,"fifteen":15,
-        "sixteen":16,"seventeen":17,"eighteen":18,"nineteen":19
-      };
-      const tens = {
-        "twenty":20,"thirty":30,"forty":40,"fifty":50,
-        "sixty":60,"seventy":70,"eighty":80,"ninety":90
-      };
-
-      if (!isNaN(parseInt(str, 10))) return parseInt(str, 10);
-
-      let parts = str.split(/[\s-]+/);
-      let total = 0;
-      parts.forEach(p => {
-        if (smallNumbers[p] !== undefined) total += smallNumbers[p];
-        else if (tens[p] !== undefined) total += tens[p];
-      });
-      return total || NaN;
-    }
-
-    // Add item
+    // Add item to list
     function addItem() {
       const code = codeInput.value.trim();
       const qty = parseInt(qtyInput.value, 10);
@@ -180,6 +145,7 @@
       codeInput.focus();
     }
 
+    // Render list
     function renderList() {
       listDiv.innerHTML = "";
       items.forEach((item, index) => {
@@ -197,6 +163,7 @@
       });
     }
 
+    // Edit item
     function editItem(index) {
       const newQty = prompt("Enter new quantity:", items[index].qty);
       if (newQty !== null) {
@@ -208,6 +175,7 @@
       }
     }
 
+    // Delete item
     function deleteItem(index) {
       if (confirm("Remove this item?")) {
         items.splice(index, 1);
@@ -215,6 +183,7 @@
       }
     }
 
+    // Clear all
     function clearAll() {
       if (confirm("Clear all items?")) {
         items = [];
@@ -222,8 +191,8 @@
       }
     }
 
-    // ✅ Download / Share Sheet with date
-    function downloadData() {
+    // ✅ Download (only one file, date in filename)
+    async function downloadData() {
       if (!items.length) {
         alert("No items to download.");
         return;
@@ -238,23 +207,28 @@
       const dd = String(date.getDate()).padStart(2, '0');
       const fileName = `scanned_data_${yyyy}-${mm}-${dd}.txt`;
 
-      // Share Sheet
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], fileName, { type: "text/plain" })] })) {
-        const file = new File([blob], fileName, { type: "text/plain" });
-        navigator.share({
-          files: [file],
-          title: "Scanned Data",
-          text: "Here is the exported barcode scan data."
-        }).catch(err => console.error("Share failed:", err));
-      } else {
-        // fallback download
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = fileName;
-        a.click();
+      try {
+        if (navigator.canShare && navigator.canShare({ files: [new File([blob], fileName, { type: "text/plain" })] })) {
+          const file = new File([blob], fileName, { type: "text/plain" });
+          await navigator.share({
+            files: [file],
+            title: "Scanned Data",
+            text: "Barcode scan data file",
+          });
+        } else {
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
+      } catch (err) {
+        console.error("Share failed:", err);
       }
     }
 
+    // Keyboard navigation
     codeInput.addEventListener("keypress", e => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -268,73 +242,6 @@
         addItem();
       }
     });
-
-    // Voice recognition
-    let recognition;
-    let waitingForQty = false;
-    let tempCode = "";
-    let voiceActive = false;
-
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechRecognition();
-      recognition.lang = "en-GB";
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript.trim();
-
-        if (!waitingForQty) {
-          tempCode = transcript.replace(/\s/g, "");
-          statusDiv.textContent = "Code heard: " + tempCode + ". Listening for quantity...";
-          waitingForQty = true;
-          setTimeout(() => recognition.start(), 500);
-        } else {
-          const qty = wordsToNumber(transcript);
-          if (!isNaN(qty) && qty > 0 && tempCode) {
-            const existing = items.find(i => i.code === tempCode);
-            if (existing) existing.qty += qty;
-            else items.push({ code: tempCode, qty });
-            renderList();
-            playBeep();
-            statusDiv.textContent = "Added: " + tempCode + " x " + qty + ". Listening for next barcode...";
-          } else {
-            statusDiv.textContent = "Couldn't understand quantity, try again.";
-          }
-          waitingForQty = false;
-          tempCode = "";
-
-          if (voiceActive) setTimeout(() => recognition.start(), 1000);
-        }
-      };
-
-      recognition.onerror = (event) => {
-        statusDiv.textContent = "Speech recognition error: " + event.error;
-        waitingForQty = false;
-        tempCode = "";
-        if (voiceActive) setTimeout(() => recognition.start(), 1500);
-      };
-
-      voiceBtn.addEventListener("click", () => {
-        if (!voiceActive) {
-          voiceActive = true;
-          waitingForQty = false;
-          tempCode = "";
-          statusDiv.textContent = "Listening for barcode...";
-          voiceBtn.textContent = "End Voice Scan";
-          recognition.start();
-        } else {
-          voiceActive = false;
-          recognition.stop();
-          statusDiv.textContent = "Voice scan stopped.";
-          voiceBtn.textContent = "Start Voice Scan";
-        }
-      });
-    } else {
-      voiceBtn.disabled = true;
-      voiceBtn.innerText = "Voice not supported";
-    }
   </script>
 </body>
 </html>
