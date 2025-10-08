@@ -123,29 +123,40 @@
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.2);
+        osc.stop(ctx.currentTime + 0.15);
       } catch (e) {
         console.warn("Beep not supported:", e);
       }
     }
 
-    // Add item to list
+    // Add item (merge duplicate barcodes)
     function addItem() {
-      const code = codeInput.value.trim();
+      let code = codeInput.value.trim();
       const qty = parseInt(qtyInput.value, 10);
+
       if (!code || qty <= 0) return;
 
+      // Normalize barcode input
+      code = code.replace(/\r?\n|\r/g, '').toUpperCase();
+
+      // Check for duplicate and merge
       const existing = items.find(i => i.code === code);
-      if (existing) existing.qty += qty;
-      else items.push({ code, qty });
+      if (existing) {
+        existing.qty += qty;
+      } else {
+        items.push({ code, qty });
+      }
+
       renderList();
       playBeep();
+
+      // Reset inputs for next scan
       codeInput.value = "";
       qtyInput.value = 1;
       codeInput.focus();
     }
 
-    // Render list
+    // Render item list
     function renderList() {
       listDiv.innerHTML = "";
       items.forEach((item, index) => {
@@ -163,7 +174,7 @@
       });
     }
 
-    // Edit item
+    // Edit item quantity
     function editItem(index) {
       const newQty = prompt("Enter new quantity:", items[index].qty);
       if (newQty !== null) {
@@ -191,7 +202,7 @@
       }
     }
 
-    // ✅ Download (only one file, date in filename)
+    // ✅ Download single file with date
     async function downloadData() {
       if (!items.length) {
         alert("No items to download.");
@@ -208,8 +219,9 @@
       const fileName = `scanned_data_${yyyy}-${mm}-${dd}.txt`;
 
       try {
-        if (navigator.canShare && navigator.canShare({ files: [new File([blob], fileName, { type: "text/plain" })] })) {
-          const file = new File([blob], fileName, { type: "text/plain" });
+        const file = new File([blob], fileName, { type: "text/plain" });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
             title: "Scanned Data",
@@ -228,7 +240,7 @@
       }
     }
 
-    // Keyboard navigation
+    // Keyboard workflow
     codeInput.addEventListener("keypress", e => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -236,6 +248,7 @@
         qtyInput.select();
       }
     });
+
     qtyInput.addEventListener("keypress", e => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -245,4 +258,3 @@
   </script>
 </body>
 </html>
-
